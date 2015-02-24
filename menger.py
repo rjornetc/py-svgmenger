@@ -19,6 +19,8 @@ __version__ = '1.3.1'
 import sys, getopt
 import svgwrite
 
+COUNT = 0
+
 
 def get_square(x,y,size):
     path = ' M %i,%i %i,%i %i,%i %i,%i z' % (x + size, y + size,
@@ -29,6 +31,10 @@ def get_square(x,y,size):
 
 
 def draw_sponge(path, iterations, x, y, size):
+    if progress:
+        global count_progress
+        print(str(100.*count_progress/total_progress)+'%')
+        count_progress += 1
     unit_size = size/3.
     if iterations == 0:
         return(path)
@@ -42,26 +48,36 @@ def draw_sponge(path, iterations, x, y, size):
         return(path)
 
 
+def get_recursive_calls_count(i):
+    if i == 0:
+        return(1)
+    else:
+        return(8 ** i + get_recursive_calls_count(i-1))
+
+
+
 if __name__ == '__main__':
 
     iterations = 1
+    progress = False
     svg = svgwrite.Drawing(filename = 'a',
                            size=('6561', '6561'),
                            profile='tiny')
     path = 'M 0,0 6561,0 6561,6561 0,6561 z'
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:],'hvi:',['help',
+        opts, args = getopt.getopt(sys.argv[1:],'hvi:p',['help',
                                                         'version',
-                                                        'iterations='])
+                                                        'iterations=',
+                                                        'progress'])
     except getopt.GetoptError:
         print('menger.py [-h] [-v]' +\
-              'menget.py [-i <iterations>]')
+              'menget.py [-p] [-i <iterations>]')
         sys.exit(2)
     for opt, arg in opts:
         if opt in ('-h', '--help'):
             print('menger.py [-h] [-v]' +\
-                  'menget.py [-i <iterations>]')
+              'menget.py [-p] [-i <iterations>]')
             sys.exit()
         elif opt in ('-v', '--version'):
             print ('py-menger ' + __version__ + '\n' +\
@@ -70,7 +86,11 @@ if __name__ == '__main__':
             sys.exit()
         elif opt in ('-i', '--iterations'):
             iterations = int(arg)
-        
+        elif opt in ('-p', '--progress'):
+            progress = True
+            count_progress = 0
+            total_progress = get_recursive_calls_count(iterations)
+    
     path += draw_sponge('', iterations, 0, 0, 6561)
     svg.add(svg.path(d=path))
     svg.save()
